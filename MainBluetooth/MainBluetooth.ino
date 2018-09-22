@@ -1,7 +1,6 @@
 #include <RCSwitch.h>
 #include <MsTimer2.h>
 
-
 const byte LOWVOLTAGE = bit(2);
 const byte NOTHING = bit(3);
 const byte GREENLIGHT = bit(4);
@@ -35,11 +34,14 @@ void setup() {
 void loop() {
   if ( mySwitch.available() ) {
     byte value = mySwitch.getReceivedValue();
-
-    switch (value) {
-      case 1:
-        Serial.println("Button 1");
+    char hisId = '0' + (value & 3);
+    switch (value & 252) {
+      case LOWVOLTAGE:
+        Serial.print(hisId + "l");
         break;
+      case 0:
+        Serial.print(hisId + "p");
+      break;
     }
 
     mySwitch.resetAvailable();
