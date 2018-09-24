@@ -9,7 +9,10 @@ const byte GREENBLINK = bit(6);
 const byte REDBLINK = bit(7);
 const byte redLed = 13;
 const byte greenLed = 12;
+const uint16_t threshold1 = 4800;
+const uint16_t threshold2 = 4600;
 
+uint32_t Vcc;
 RCSwitch mySwitch = RCSwitch();
 bool activeButton = true;
 byte id;
@@ -37,7 +40,6 @@ void setup() {
   digitalWrite(8, LOW);
 
   Blink(greenLed);
-  Serial.println(id);
 }
 
 void loop() {
@@ -65,24 +67,24 @@ void loop() {
           Blink(greenLed);
           break;
       }
-
+    
     mySwitch.resetAvailable();
   }
 }
 
 void OnPushButton() {
   if (activeButton) {
-    mySwitch.send(id, 3);
-    Serial.print(id);
+    mySwitch.send(id, 8);
     activeButton = false;
   }
 }
 
 void Timer() {
   activeButton = true;
-  if (ReadVcc() < 4800) {
-    mySwitch.send(id & LOWVOLTAGE, 3);
-    Blink(redLed);
+  if (Vcc = ReadVcc() < threshold1) {
+    mySwitch.send(id | LOWVOLTAGE, 8);
+    if (Vcc < threshold2)
+      Blink(redLed);
   }
 }
 

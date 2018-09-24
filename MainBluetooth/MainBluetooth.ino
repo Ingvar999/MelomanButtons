@@ -9,13 +9,15 @@ const byte GREENBLINK = bit(6);
 const byte REDBLINK = bit(7);
 const int redLed = 13;
 const int greenLed = 12;
+const uint16_t threshold1 = 4800;
+const uint16_t threshold2 = 4600;
 
+uint32_t Vcc;
 RCSwitch mySwitch = RCSwitch();
 bool activeButton = true;
 const char id = '0';
 
 void setup() {
-  analogReference(INTERNAL);
   pinMode(redLed, OUTPUT);
   pinMode(greenLed, OUTPUT);
   pinMode(3, INPUT);
@@ -37,13 +39,13 @@ void loop() {
     char hisId = '0' + (value & 3);
     switch (value & 252) {
       case LOWVOLTAGE:
-        Serial.print(hisId + "l");
+        Serial.print(String(hisId) + "l");
         break;
       case 0:
-        Serial.print(hisId + "p");
+        Serial.print(String(hisId) + "p");
       break;
     }
-
+    delay(10);
     mySwitch.resetAvailable();
   }
 
@@ -96,20 +98,22 @@ void loop() {
 
 void OnPushButton() {
   if (activeButton) {
-    Serial.print("0p");
+    Serial.print(String(id) + "p");
     activeButton = false;
   }
 }
 
 void Timer() {
   activeButton = true;
-  if (ReadVcc() < 4800) {
-    Serial.print("0l");
-    Blink(redLed);
+  if (Vcc = ReadVcc() < threshold1) {
+    Serial.print(String(id) + "l");
+    if (Vcc < threshold2)
+      Blink(redLed);
   }
-  if ((analogRead(6) * 6.445) < 4800){
+  if (Vcc = (((uint32_t)analogRead(A5) * 10000) >> 10) < threshold1){
     Serial.print("bl");
-    Blink(greenLed);
+    if (Vcc < threshold2)
+      Blink(greenLed);
   }
 }
 
