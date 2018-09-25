@@ -9,8 +9,8 @@ const byte GREENBLINK = bit(6);
 const byte REDBLINK = bit(7);
 const byte redLed = 13;
 const byte greenLed = 12;
-const uint16_t threshold1 = 4800;
-const uint16_t threshold2 = 4600;
+const uint16_t threshold1 = 4900;
+const uint16_t threshold2 = 4700;
 
 uint32_t Vcc;
 RCSwitch mySwitch = RCSwitch();
@@ -29,15 +29,16 @@ void setup() {
 
   mySwitch.enableReceive(0);
   mySwitch.enableTransmit(4);
-
-  attachInterrupt(1, OnPushButton, RISING);
-  MsTimer2::set(1000, Timer);
-  MsTimer2::start();
+  mySwitch.setRepeatTransmit(10);
 
   digitalWrite(8, HIGH);
   digitalWrite(9, LOW);
   id = 1 + digitalRead(10) + digitalRead(11);
   digitalWrite(8, LOW);
+
+  attachInterrupt(1, OnPushButton, RISING);
+  MsTimer2::set(800, Timer);
+  MsTimer2::start();
 
   Blink(greenLed);
 }
@@ -80,7 +81,10 @@ void OnPushButton() {
 }
 
 void Timer() {
-  activeButton = true;
+  if (!activeButton){
+     activeButton = true;
+     mySwitch.send(id, 8);
+  }
   if (Vcc = ReadVcc() < threshold1) {
     mySwitch.send(id | LOWVOLTAGE, 8);
     if (Vcc < threshold2)

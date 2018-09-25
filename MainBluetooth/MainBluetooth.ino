@@ -25,6 +25,7 @@ void setup() {
   
   mySwitch.enableReceive(0);
   mySwitch.enableTransmit(4);
+  mySwitch.setRepeatTransmit(7);
   
   attachInterrupt(1, OnPushButton, RISING);
   MsTimer2::set(1000, Timer);
@@ -45,7 +46,7 @@ void loop() {
         Serial.print(String(hisId) + "p");
       break;
     }
-    delay(10);
+    
     mySwitch.resetAvailable();
   }
 
