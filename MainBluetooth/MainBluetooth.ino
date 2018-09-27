@@ -9,24 +9,25 @@ const byte GREENBLINK = bit(6);
 const byte REDBLINK = bit(7);
 const int redLed = 13;
 const int greenLed = 12;
-const uint16_t threshold1 = 4800;
-const uint16_t threshold2 = 4600;
+const uint16_t threshold1 = 4900;
+const uint16_t threshold2 = 4700;
 
 uint32_t Vcc;
 RCSwitch mySwitch = RCSwitch();
-bool activeButton = true;
-const char id = '0';
+bool activeButtons[4] = {true, true, true, true};
+const byte id = 0;
+bool isPushed = false;
 
 void setup() {
   pinMode(redLed, OUTPUT);
   pinMode(greenLed, OUTPUT);
   pinMode(3, INPUT);
   Serial.begin(9600);
-  
+
   mySwitch.enableReceive(0);
   mySwitch.enableTransmit(4);
   mySwitch.setRepeatTransmit(7);
-  
+
   attachInterrupt(1, OnPushButton, RISING);
   MsTimer2::set(1000, Timer);
   MsTimer2::start();
@@ -35,83 +36,99 @@ void setup() {
 }
 
 void loop() {
-  if ( mySwitch.available() ) {
-    byte value = mySwitch.getReceivedValue();
-    char hisId = '0' + (value & 3);
-    switch (value & 252) {
-      case LOWVOLTAGE:
-        Serial.print(String(hisId) + "l");
-        break;
-      case 0:
-        Serial.print(String(hisId) + "p");
-      break;
-    }
-    
-    mySwitch.resetAvailable();
+  ButtonsDataHandle();
+
+  if (isPushed) {
+    Serial.print(String(id) + "p");
+    isPushed = false;
   }
 
+  HostDataHandle();
+}
+
+void ButtonsDataHandle(){
+   if ( mySwitch.available() ) {
+    byte value = mySwitch.getReceivedValue();
+    byte senderId = value & 3;
+    switch (value & 252) {
+      case LOWVOLTAGE:
+        Serial.print(String(senderId) + "l");
+        break;
+      case 0:
+        if (activeButtons[senderId]) {
+          Serial.print(String(senderId) + "p");
+          activeButtons[senderId] = false;
+        }
+        break;
+    }
+    mySwitch.resetAvailable();
+  }
+}
+
+void HostDataHandle(){
   if ( Serial.available() ) {
     String value = Serial.readString();
-    if (value.length() == 2){
-      
-    if (value[0] == id)
-      switch (value[1]) {
-        case 'n':
-          digitalWrite(redLed, LOW);
-          digitalWrite(greenLed, LOW);
-          break;
-        case 'r':
-          digitalWrite(greenLed, LOW);
-          digitalWrite(redLed, HIGH);
-          break;
-        case 'g':
-          digitalWrite(redLed, LOW);
-          digitalWrite(greenLed, HIGH);
-          break;
-        case 'y':
-          Blink(redLed);
-          break;
-        case 'u':
-          Blink(greenLed);
-          break;
-      }
-    else if (value[0] >= '1' && value[0] <= '3')
-      switch(value[1]){
-        case 'n':
-          mySwitch.send((value[0] - '0') | NOTHING, 8);
-        break;
-        case 'r':
-          mySwitch.send((value[0] - '0') | REDLIGHT, 8);
-        break;
-        case 'g':
-          mySwitch.send((value[0] - '0') | GREENLIGHT, 8);
-        break;
-        case 'y':
-          mySwitch.send((value[0] - '0') | REDBLINK, 8);
-        break;
-        case 'u':
-          mySwitch.send((value[0] - '0') | GREENBLINK, 8);
-        break;
-      }
+    if (value.length() == 2) {
+
+      if (value[0] == '0' + id)
+        switch (value[1]) {
+          case 'n':
+            digitalWrite(redLed, LOW);
+            digitalWrite(greenLed, LOW);
+            break;
+          case 'r':
+            digitalWrite(greenLed, LOW);
+            digitalWrite(redLed, HIGH);
+            break;
+          case 'g':
+            digitalWrite(redLed, LOW);
+            digitalWrite(greenLed, HIGH);
+            break;
+          case 'y':
+            Blink(redLed);
+            break;
+          case 'u':
+            Blink(greenLed);
+            break;
+        }
+      else if (value[0] >= '1' && value[0] <= '3')
+        switch (value[1]) {
+          case 'n':
+            mySwitch.send((value[0] - '0') | NOTHING, 8);
+            break;
+          case 'r':
+            mySwitch.send((value[0] - '0') | REDLIGHT, 8);
+            break;
+          case 'g':
+            mySwitch.send((value[0] - '0') | GREENLIGHT, 8);
+            break;
+          case 'y':
+            mySwitch.send((value[0] - '0') | REDBLINK, 8);
+            break;
+          case 'u':
+            mySwitch.send((value[0] - '0') | GREENBLINK, 8);
+            break;
+        }
     }
   }
 }
 
 void OnPushButton() {
-  if (activeButton) {
-    Serial.print(String(id) + "p");
-    activeButton = false;
+  if (activeButtons[0]) {
+    isPushed = true;
+    activeButtons[0] = false;
   }
 }
 
 void Timer() {
-  activeButton = true;
+  for (int i = 0; i < 4; ++i)
+    activeButtons[i] = true;
   if (Vcc = ReadVcc() < threshold1) {
     Serial.print(String(id) + "l");
     if (Vcc < threshold2)
       Blink(redLed);
   }
-  if (Vcc = (((uint32_t)analogRead(A5) * 10000) >> 10) < threshold1){
+  if (Vcc = (((uint32_t)analogRead(A5) * 10000) >> 10) < threshold1) {
     Serial.print("bl");
     if (Vcc < threshold2)
       Blink(greenLed);
