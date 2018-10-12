@@ -36,10 +36,6 @@ void setup() {
 }
 
 void loop() {
-  if (isPushed){
-    delay(50);
-  }
-  
   ButtonsDataHandle();
 
   if (isPushed) {
