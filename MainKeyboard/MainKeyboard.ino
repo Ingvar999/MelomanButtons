@@ -3,32 +3,40 @@
 #include <Keyboard.h>
 
 const byte LOWVOLTAGE = bit(2);
+const uint16_t threshold1 = 5000;
 
 RCSwitch mySwitch = RCSwitch();
 bool activeButtons[4] = {true, true, true, true};
 const byte id = 0;
+bool isPushed = false;
 
 void setup() {
+  Serial.begin(9600);
   Keyboard.begin();
   pinMode(3, INPUT_PULLUP);
+  pinMode(2, INPUT);
   
   mySwitch.enableReceive(1);
 
+  attachInterrupt(0, OnPushButton, FALLING);
+  
   Timer3.initialize(1000000);
   Timer3.attachInterrupt(Timer);
   Timer3.start();
 }
-//22
+
 void loop() {
+  if (isPushed)
+    delay(50);
 
  ButtonsDataHandle();
-
-  if (activeButtons[0] && digitalRead(3) == LOW) {
+  
+  if (isPushed) {
     Keyboard.print('0');
-    activeButtons[0] = false;
+    isPushed = false;
   }
 }
-
+//
 void ButtonsDataHandle(){
    if ( mySwitch.available() ) {
     byte value = mySwitch.getReceivedValue();
@@ -47,8 +55,17 @@ void ButtonsDataHandle(){
     mySwitch.resetAvailable();
   }
 }
-
+//
 void Timer() {
   for (int i = 0; i < 4; ++i)
     activeButtons[i] = true;
+    if ((((uint32_t)analogRead(A1) * 9200) >> 10) < threshold1)
+      Keyboard.print("l0"); 
+}
+
+void OnPushButton(){
+  if (activeButtons[0]){
+    isPushed = true;
+    activeButtons[0] = false;
+  }
 }
